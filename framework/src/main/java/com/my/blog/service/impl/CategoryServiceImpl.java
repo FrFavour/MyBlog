@@ -7,11 +7,13 @@ import com.my.blog.constant.SystemConstants;
 import com.my.blog.dao.ArticleMapper;
 import com.my.blog.dao.CategoryMapper;
 import com.my.blog.domain.ResponseResult;
-import com.my.blog.domain.dto.CategoryDto;
+import com.my.blog.domain.dto.CategoryListDto;
 import com.my.blog.domain.entity.Article;
 import com.my.blog.domain.entity.Category;
 import com.my.blog.domain.vo.CategoryVo;
 import com.my.blog.domain.vo.PageVo;
+import com.my.blog.enums.AppHttpCodeEnum;
+import com.my.blog.exception.SystemException;
 import com.my.blog.service.ICategoryService;
 import com.my.blog.utils.BeanCopyUtils;
 import org.springframework.beans.BeanUtils;
@@ -21,6 +23,7 @@ import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -77,10 +80,10 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
     }
 
     @Override
-    public ResponseResult<PageVo> pageCategoryList(Integer pageNum, Integer pageSize, CategoryDto categoryDto) {
+    public ResponseResult<PageVo> pageCategoryList(Integer pageNum, Integer pageSize, CategoryListDto categoryListDto) {
         LambdaQueryWrapper<Category> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(StringUtils.hasText(categoryDto.getName()), Category::getName, categoryDto.getName());
-        queryWrapper.eq(StringUtils.hasText(categoryDto.getStatus()), Category::getStatus, categoryDto.getStatus());
+        queryWrapper.like(StringUtils.hasText(categoryListDto.getName()), Category::getName, categoryListDto.getName());
+        queryWrapper.eq(StringUtils.hasText(categoryListDto.getStatus()), Category::getStatus, categoryListDto.getStatus());
 
         Page<Category> page = new Page<>(pageNum, pageSize);
         page(page, queryWrapper);
@@ -90,6 +93,41 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
 
         PageVo pageVo = new PageVo(categoryVoList, page.getTotal());
         return ResponseResult.okResult(pageVo);
+    }
 
+    @Override
+    public ResponseResult addCategory(Category category) {
+        if (!StringUtils.hasText(category.getName())) {
+            throw new SystemException(AppHttpCodeEnum.SYSTEM_ERROR);
+        }
+        categoryMapper.insert(category);
+        return ResponseResult.okResult();
+    }
+
+    @Override
+    public ResponseResult<Category> getCategory(Long id) {
+        if (Objects.isNull(id)) {
+            throw new SystemException(AppHttpCodeEnum.SYSTEM_ERROR);
+        }
+        Category category = categoryMapper.selectById(id);
+        return ResponseResult.okResult(category);
+    }
+
+    @Override
+    public ResponseResult updateCategory(Category category) {
+        if (Objects.isNull(category.getId()) && !StringUtils.hasText(category.getName())) {
+            throw new SystemException(AppHttpCodeEnum.SYSTEM_ERROR);
+        }
+        categoryMapper.updateById(category);
+        return ResponseResult.okResult();
+    }
+
+    @Override
+    public ResponseResult delCateogry(Long id) {
+        if (Objects.isNull(id)) {
+            throw new SystemException(AppHttpCodeEnum.SYSTEM_ERROR);
+        }
+        categoryMapper.deleteById(id);
+        return ResponseResult.okResult();
     }
 }

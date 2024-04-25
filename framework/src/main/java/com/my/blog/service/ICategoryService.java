@@ -2,7 +2,7 @@ package com.my.blog.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.my.blog.domain.ResponseResult;
-import com.my.blog.domain.dto.CategoryDto;
+import com.my.blog.domain.dto.CategoryListDto;
 import com.my.blog.domain.entity.Category;
 import com.my.blog.domain.vo.CategoryVo;
 import com.my.blog.domain.vo.PageVo;
@@ -23,5 +23,13 @@ public interface ICategoryService extends IService<Category> {
 
     List<CategoryVo> listAllCategory();
 
-    ResponseResult<PageVo> pageCategoryList(Integer pageNum, Integer pageSize, CategoryDto categoryDto);
+    ResponseResult<PageVo> pageCategoryList(Integer pageNum, Integer pageSize, CategoryListDto categoryListDto);
+
+    ResponseResult addCategory(Category category);
+
+    ResponseResult<Category> getCategory(Long id);
+
+    ResponseResult updateCategory(Category category);
+
+    ResponseResult delCateogry(Long id);
 }

@@ -3,6 +3,7 @@ package com.my.blog.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.my.blog.domain.ResponseResult;
 import com.my.blog.domain.dto.AddArticleDto;
+import com.my.blog.domain.dto.UpdateArticleDto;
 import com.my.blog.domain.entity.Article;
 
 /**
@@ -26,4 +27,10 @@ public interface IArticleService extends IService<Article> {
     ResponseResult getAdminArticleList(Integer pageNum, Integer pageSize, String title, String summary);
 
     ResponseResult add(AddArticleDto article);
+
+    ResponseResult<Article> getArticle(Long id);
+
+    ResponseResult updateArticle(UpdateArticleDto articleDto);
+
+    ResponseResult delArticle(Long id);
 }

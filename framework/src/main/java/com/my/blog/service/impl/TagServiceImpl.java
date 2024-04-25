@@ -91,8 +91,7 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements ITagS
         LambdaQueryWrapper<Tag> wrapper = new LambdaQueryWrapper<>();
         wrapper.select(Tag::getId,Tag::getName);
         List<Tag> list = list(wrapper);
-        List<TagVo> tagVos = BeanCopyUtils.copyBeanList(list,
-                TagVo.class);
+        List<TagVo> tagVos = BeanCopyUtils.copyBeanList(list, TagVo.class);
         return tagVos;
     }
 }

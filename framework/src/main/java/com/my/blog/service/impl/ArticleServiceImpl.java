@@ -5,9 +5,12 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.my.blog.constant.SystemConstants;
 import com.my.blog.dao.ArticleMapper;
+import com.my.blog.dao.ArticleTagMapper;
 import com.my.blog.dao.CategoryMapper;
+import com.my.blog.dao.TagMapper;
 import com.my.blog.domain.ResponseResult;
 import com.my.blog.domain.dto.AddArticleDto;
+import com.my.blog.domain.dto.UpdateArticleDto;
 import com.my.blog.domain.entity.Article;
 import com.my.blog.domain.entity.ArticleTag;
 import com.my.blog.domain.entity.Category;
@@ -15,6 +18,8 @@ import com.my.blog.domain.vo.ArticleDetailVo;
 import com.my.blog.domain.vo.ArticleListVo;
 import com.my.blog.domain.vo.HotArticleVo;
 import com.my.blog.domain.vo.PageVo;
+import com.my.blog.enums.AppHttpCodeEnum;
+import com.my.blog.exception.SystemException;
 import com.my.blog.service.IArticleService;
 import com.my.blog.service.IArticleTagService;
 import com.my.blog.utils.BeanCopyUtils;
@@ -23,9 +28,11 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -121,8 +128,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     }
 
     @Override
-    public ResponseResult getAdminArticleList(Integer pageNum, Integer pageSize,
-                                              String title, String summary) {
+    public ResponseResult getAdminArticleList(Integer pageNum, Integer pageSize, String title, String summary) {
 //设置条件查询
         LambdaQueryWrapper<Article> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.like(title != null, Article::getTitle, title)
@@ -157,4 +163,54 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         articleTagService.saveBatch(articleTags);
         return ResponseResult.okResult();
     }
+
+    @Autowired
+    private TagMapper tagMapper;
+
+    @Override
+    public ResponseResult<Article> getArticle(Long id) {
+        Article article = articleMapper.selectById(id);
+        List<Long> tags = tagMapper.selectAllTagByArticleId(id);
+        UpdateArticleDto articleDto = BeanCopyUtils.copyBean(article, UpdateArticleDto.class);
+        articleDto.setTags(tags);
+        return ResponseResult.okResult(articleDto);
+    }
+
+
+    @Autowired
+    private ArticleTagMapper articleTagMapper;
+
+    @Override
+    public ResponseResult updateArticle(UpdateArticleDto articleDto) {
+        Article article = new Article();
+        BeanUtils.copyProperties(articleDto, article);
+        if (!StringUtils.hasText(article.getTitle())) {
+            throw new SystemException(AppHttpCodeEnum.SYSTEM_ERROR);
+        }
+        articleMapper.updateById(article);
+
+        // 先删除现有的标签
+        LambdaQueryWrapper<ArticleTag> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(ArticleTag::getArticleId, article.getId());
+        articleTagMapper.delete(queryWrapper);
+
+        // 更新标签
+        List<ArticleTag> articleTags = articleDto.getTags().stream()
+                .map(tagId -> new ArticleTag(article.getId(), tagId))
+                .collect(Collectors.toList());
+        //添加 博客和标签的关联
+        articleTagService.saveBatch(articleTags);
+        return ResponseResult.okResult();
+    }
+
+
+    @Override
+    public ResponseResult delArticle(Long id) {
+        if (Objects.isNull(id)) {
+            throw new SystemException(AppHttpCodeEnum.SYSTEM_ERROR);
+        }
+        articleMapper.deleteById(id);
+        return ResponseResult.okResult();
+    }
 }
+
